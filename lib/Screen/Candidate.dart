@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:voting/Screen/ConfirmVote.dart'; // Import the ConfirmVote page
 
 class Candidates extends StatelessWidget {
   const Candidates({Key? key}) : super(key: key);
@@ -124,7 +125,12 @@ class Candidates extends StatelessWidget {
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Add "Confirm Vote" action
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ConfirmVote(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange[200],
