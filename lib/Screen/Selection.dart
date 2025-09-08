@@ -13,7 +13,7 @@ class Selection extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text(
-          'AfriVote Home',
+          'Your Candidates',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,

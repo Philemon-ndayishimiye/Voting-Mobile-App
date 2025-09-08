@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'login.dart'; // Import the login page
+// import 'login.dart'; // Import the login page
+import 'package:go_router/go_router.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,7 +14,7 @@ class HomeScreen extends StatelessWidget {
         height: double.infinity,
         decoration: const BoxDecoration(
           image: DecorationImage(
-            image: AssetImage('assets/tree_bg.png'), // Replace with your Baobab tree background
+            image: AssetImage('assets/image/tree.png'), // Replace with your Baobab tree background
             fit: BoxFit.cover,
           ),
         ),
@@ -51,10 +53,11 @@ class HomeScreen extends StatelessWidget {
             // Get Started button
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
+                            context.go('/login');
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (context) => const LoginPage()),
+                // );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,

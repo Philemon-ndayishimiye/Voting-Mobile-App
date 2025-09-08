@@ -18,7 +18,7 @@ class Candidates extends StatelessWidget {
           },
         ),
         title: const Text(
-          'Vote: Village Council Election 2024',
+          'Vote: Village Council Election 2025',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,

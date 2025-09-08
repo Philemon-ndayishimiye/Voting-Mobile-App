@@ -1,8 +1,100 @@
 import 'package:flutter/material.dart';
-import 'package:voting/Screen/Selection.dart'; // Import your selection page
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:go_router/go_router.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _idController = TextEditingController();
+  bool _biometricEnabled = false;
+  bool _loading = false; // to show a loading indicator
+  final _loginUrl = "https://voting-backend-vy3v.onrender.com/api/auth/login";
+
+  Future<void> _login() async {
+    String idCard = _idController.text.trim();
+
+    if (idCard.length != 16) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid 16-digit ID.")),
+      );
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(_loginUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'identificationCard': idCard}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final token = data['token']?.toString() ?? '';
+        final user = data['user'];
+
+        final village = user?['village']?.toString().trim().toLowerCase() ?? '';
+        final role = user?['role']?.toString().trim().toLowerCase() ?? '';
+
+        if (token.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Login failed: token missing")),
+          );
+          return;
+        }
+
+        // Save token, village, role in shared_preferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('village', village);
+        await prefs.setString('role', role);
+
+        // Conditional navigation
+        if (role == 'admin') {
+          context.go('/admin');
+        } else {
+          switch (village) {
+            case 'ituze':
+              context.go('/ituze');
+              break;
+            case 'gitwa':
+              context.go('/gitwa');
+              break;
+            case 'mpazi':
+              context.go('/mpazi');
+              break;
+            default:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Village not recognized: '$village'")),
+              );
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login failed: ${response.body}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      setState(() {
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,16 +102,7 @@ class LoginPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.orange,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context); // Go back to HomeScreen
-          },
-        ),
-        title: const Text(
-          "Login",
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text("Login", style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Padding(
@@ -29,73 +112,29 @@ class LoginPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 20),
-
               const Text(
                 "Secure Your Access",
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
-
               const Text(
-                "Please provide your details to log in or register.",
+                "Please provide your identification Number to log in.",
                 style: TextStyle(fontSize: 14, color: Colors.black54),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 30),
-
-              // Phone Number
-              TextField(
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.phone),
-                  hintText: "+250 788 123 456",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
               const SizedBox(height: 20),
 
-              // OTP
+              // ID Input
               TextField(
+                controller: _idController,
                 keyboardType: TextInputType.number,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: "Enter the 6-digit code sent to your phone.",
-                  suffix: GestureDetector(
-                    onTap: () {
-                      // Resend OTP action
-                    },
-                    child: const Text(
-                      "Resend OTP",
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  hintText: "Enter your 16-digit identification Card",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Upload National ID
-              ElevatedButton.icon(
-                onPressed: () {
-                  // Upload ID action
-                },
-                icon: const Icon(Icons.upload_file, color: Colors.orange),
-                label: const Text(
-                  "Upload National ID",
-                  style: TextStyle(color: Colors.orange),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.orange),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
               ),
               const SizedBox(height: 20),
@@ -108,28 +147,27 @@ class LoginPage extends StatelessWidget {
                   const Text("Enable Biometric Login"),
                   const Spacer(),
                   Switch(
-                    value: false,
-                    onChanged: (value) {},
+                    value: _biometricEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _biometricEnabled = value;
+                      });
+                    },
                     activeColor: Colors.orange,
                   ),
                 ],
               ),
               const SizedBox(height: 30),
 
-              // Continue Button → Go to Selection page
+              // Continue Button
               ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const Selection()),
-                  );
-                },
+                onPressed: _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
                 child: const Text(
-                  "Continue to AfriVote",
+                  "Continue to Your Village",
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
